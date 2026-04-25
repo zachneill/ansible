@@ -1,0 +1,6 @@
+- name: Download/Update inventory
+  git:
+    repo: "https://github.com/zachneill/ansible.git"
+    dest: "/home/semaphore/ansible"
+  environment: 
+    GIT_TERMINAL_PROMPT: "0"

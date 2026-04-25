@@ -1,11 +1,14 @@
 app_servers:
   hosts:
-    o[a:z]pmgtapp[01:10].mgt.zachneill.com:
+    # o[a:z]pmgtapp[01:10].mgt.zachneill.com:
+    oapmgtapp01.mgt.zachneill.com:
 
 platform_servers:
   hosts:
-    o[a:z]pmgtplt[01:10].mgt.zachneill.com:
+    # o[a:z]pmgtplt[01:10].mgt.zachneill.com:
+    oupmgtplt01.mgt.zachneill.com:
 
 ad_servers:
   hosts:
-    o[a:z]pmgtadc[01:10].mgt.zachneill.com:
+    # o[a:z]pmgtadc[01:10].mgt.zachneill.com:
+    owpmgtadc01.mgt.zachneill.com:
