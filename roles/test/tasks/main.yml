@@ -1,0 +1,2 @@
+- debug: 
+    msg: "Verifying Ansible role connectivity to {{ ansible_hostname }}."
