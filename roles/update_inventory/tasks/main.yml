@@ -4,3 +4,5 @@
     dest: "/home/semaphore/ansible"
   environment: 
     GIT_TERMINAL_PROMPT: "0"
+  become: true
+  become_user: root
