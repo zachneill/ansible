@@ -1,0 +1,7 @@
+controllers:
+  hosts:
+    o[a:z]pndmcnt[01:10].ndm.zachneill.com:
+
+local:
+  hosts:
+    o[a:z]pndmzpc[01:10].ndm.zachneill.com:
