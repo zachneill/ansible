@@ -1,0 +1,14 @@
+app_servers:
+  hosts:
+    # o[a:z]pautapp[01:10].aut.zachneill.com:
+    oapautapp01.aut.zachneill.com:
+
+platform_servers:
+  hosts:
+    # o[a:z]pautplt[01:10].aut.zachneill.com:
+    oupautplt01.aut.zachneill.com:
+
+ad_servers:
+  hosts:
+    # o[a:z]pautadc[01:10].aut.zachneill.com:
+    owpautadc01.aut.zachneill.com:
