@@ -1,2 +1,2 @@
-.pkrvars.hcl
-downloaded_iso_path
+*.pkrvars.hcl
+downloaded_iso_path/
