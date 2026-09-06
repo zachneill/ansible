@@ -1,0 +1,10 @@
+- name: Create directory for app
+  file: 
+    path: "/opt/loc_admin/app"
+    state: directory
+
+- name: Clone app repo 
+  git: 
+    repo: https://github.com/zachneill/app.git
+    dest: "/opt/loc_admin/app"
+    version: main
