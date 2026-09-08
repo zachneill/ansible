@@ -15,82 +15,65 @@ packer {
   }
 }
 
-# source "proxmox-iso" "almalinux" {
-#   proxmox_url  = "http://controller.ndm.zachneill.com:8006/api2/json"
-#   node         = "odpndmcnt01"
-#   username     = "terraform-prov@pve!terraform"
-#   token        = var.proxmox_api_token
-#   tags         = "packer-managed;app;aut"
-#   vm_id        = 100
-#   ssh_username = "almalinux"
-#   ssh_password = var.ssh_password
+# AlmaLinux OS 10 Packer template for Cloud-init included and OpenStack compatible Generic Cloud images
 
-#   boot_iso {
-#     type         = "scsi"
-#     iso_url     = "https://repo.almalinux.org/almalinux/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-10.2-20260817.0.x86_64.qcow2"
-#     iso_storage_pool = "local"
-#     unmount      = true
-#     iso_checksum = "sha256:bc59485c4828861a15887e30ff1bb913f0f16202fd7286208518f4814da1e10a"
-#   }
-# }
-
-source "qemu" "almalinux" {
-  iso_url      = "https://repo.almalinux.org/almalinux/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-10.2-20260817.0.x86_64.qcow2"
-  iso_checksum = "sha256:bc59485c4828861a15887e30ff1bb913f0f16202fd7286208518f4814da1e10a"
-  headless     = true
-  disk_image   = true
-  format       = "qcow2"
-  accelerator  = "kvm"
-  vm_name = "app-almalinux-base"
-  output_directory = "output-qcow2"
-  disk_size        = "10G"
-  cpus   = 2
-  memory = 2048
-  http_directory = "http"
-  boot_wait = "5s"
-  boot_command = [
-    "<wait>c<wait>",
-    "linux /casper/vmlinuz quiet autoinstall ds=nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
-    "<enter><wait>",
-    "initrd /casper/initrd",
-    "<enter><wait>",
-    "boot<enter>"
-  ]
-  communicator   = "ssh"
-  ssh_username = "almalinux"
-  ssh_password = var.ssh_password
-  ssh_timeout    = "20m"
-  shutdown_command = "echo 'packer' | sudo -S shutdown -P now"
+source "qemu" "almalinux_10_gencloud_x86_64" {
+  iso_url        = local.iso_url_10_x86_64
+  iso_checksum   = local.iso_checksum_10_x86_64
+  http_directory = "packer/http"
+  # http_directory     = var.http_directory
+  shutdown_command   = var.root_shutdown_command
+  ssh_username       = var.gencloud_ssh_username
+  ssh_password       = var.gencloud_ssh_password
+  ssh_timeout        = var.ssh_timeout
+  boot_command       = var.gencloud_boot_command_10_x86_64
+  boot_wait          = var.boot_wait
+  accelerator        = "kvm"
+  disk_interface     = "virtio-scsi"
+  disk_size          = var.gencloud_disk_size
+  disk_cache         = "unsafe"
+  disk_discard       = "unmap"
+  disk_detect_zeroes = "unmap"
+  disk_compression   = true
+  format             = "qcow2"
+  headless           = var.headless
+  machine_type       = "q35"
+  memory             = var.memory_x86_64
+  net_device         = "virtio-net"
+  qemu_binary        = var.qemu_binary
+  vm_name            = "AlmaLinux-10-GenericCloud-${var.os_ver_10}-${formatdate("YYYYMMDD", timestamp())}.${var.build_number}.x86_64.qcow2"
+  cpu_model          = "host"
+  cpus               = var.cpus
+  # efi_boot           = true
+  # efi_firmware_code  = var.ovmf_code
+  # efi_firmware_vars  = var.ovmf_vars
+  # efi_drop_efivars   = true
 }
 
 build {
-  name = "app-almalinux-base"
   sources = [
-    "source.qemu.almalinux"
-  ] 
-  # name = "app-almalinux-image"
-  # sources = [
-  #   "source.proxmox-iso.almalinux"
-  # ]
+    "source.qemu.almalinux_10_gencloud_x86_64"
+  ]
 
   # provisioner "ansible" {
-  #   playbook_file = "packer.yml"
-  #   # skip_version_check = true
-  #   extra_arguments = [
-  #     "--extra-vars",
-  #     "vm=app ansible_user=root"
+  #   galaxy_file          = "./ansible/requirements.yml"
+  #   galaxy_force_install = true
+  #   collections_path     = "./ansible/collections"
+  #   roles_path           = "./ansible/roles"
+  #   playbook_file        = "./ansible/gencloud.yml"
+  #   ansible_env_vars = [
+  #     "ANSIBLE_PIPELINING=True",
+  #     "ANSIBLE_REMOTE_TEMP=/tmp",
+  #     "ANSIBLE_SSH_TRANSFER_METHOD=scp",
+  #     "ANSIBLE_SCP_EXTRA_ARGS=-O",
   #   ]
   # }
-}
-
-# variable "proxmox_api_token" {
-#   type        = string
-#   description = "The password for the sudo user."
-#   sensitive   = true
-# }
-
-variable "ssh_password" {
-  type        = string
-  description = "The password for the proxmox iso ssh user."
-  sensitive   = true
+  provisioner "ansible" {
+    playbook_file = "packer.yml"
+    # skip_version_check = true
+    extra_arguments = [
+      "--extra-vars",
+      "vm=app ansible_user=root"
+    ]
+  }
 }

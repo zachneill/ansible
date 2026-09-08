@@ -3,6 +3,11 @@
     path: "/opt/loc_admin/app"
     state: directory
 
+- name: Install git
+  package:
+    name: git
+    state: present
+
 - name: Clone app repo 
   git: 
     repo: https://github.com/zachneill/app.git
