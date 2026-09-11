@@ -1,15 +1,177 @@
-- name: Create directory for app
-  file: 
-    path: "/opt/loc_admin/app"
-    state: directory
+- name: Update and upgrade all packages
+  dnf:
+    name: "*"
+    state: latest
+    update_cache: yes
 
-- name: Install git
-  package:
-    name: git
+- name: Install packages
+  dnf:
+    name: 
+      - qemu-guest-agent
+      - net-tools
+      - curl
+      - git
+      - realmd 
+      - sssd 
+      - adcli
+      - samba-common-tools
+      - oddjob 
+      - oddjob-mkhomedir
+      - krb5-workstation
+      - whois
+      - kernel-modules-extra
     state: present
+
+- name: Install Docker 
+  block: 
+    - name: Depmod to load new modules
+      shell: depmod -a
+
+    - name: Add Docker CE repository
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: '0644'
+    # - name: Add Docker CE repository
+    #   yum_repository: 
+    #     name: docker-ce
+    #     description: Docker CE Stable
+    #     baseurl: https://download.docker.com/linux/alma/10/x86_64/stable
+    #     gpgcheck: true
+    #     gpgkey: https://download.docker.com/linux/alma/gpg
+    - name: Show OS release
+      command: cat /etc/os-release
+      register: os_release
+      changed_when: false
+
+    - debug:
+        var: os_release.stdout
+
+    - name: Show Docker repo file
+      command: cat /etc/yum.repos.d/docker-ce.repo
+      register: docker_repo
+      changed_when: false
+
+    - name: Debug Docker repo
+      debug:
+        var: docker_repo.stdout
+    - name: Show Docker repository
+      command: dnf repolist --all
+      register: docker_repolist
+      changed_when: false
+
+    - debug:
+        var: docker_repolist.stdout
+
+    - name: List Docker CE packages
+      command: dnf list --showduplicates docker-ce
+      register: docker_list
+      changed_when: false
+      failed_when: false
+
+    - debug:
+        var: docker_list.stdout
+    - name: Install Docker CE
+      dnf:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Create groups
+      group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - docker
+        - sudo
+
+    - name: Add the user loc_admin 
+      user:
+        name: loc_admin
+        comment: Local Admin User
+        create_home: true 
+        shell: /bin/bash
+        groups: sudo,docker
+        append: true 
+
+- name: Enable qemu and oddjob services
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - qemu-guest-agent
+    - oddjobd
+
+- name: Auto-make home directory 
+  shell: authselect select sssd with-mkhomedir
+
+- name: Set use_fully_qualified_names to False
+  lineinfile:
+    path: "/etc/sssd/sssd.conf"
+    search_string: use_fully_qualified_names
+    line: use_fully_qualified_names = False
+
+- name: Restart sssd
+  service:
+    name: sssd
+    state: restarted 
+
+- name: Install and configure Tailscale
+  block:
+    - name: Add Tailscale repository
+      dnf:
+        name: https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+        state: present
+
+    - name: Install Tailscale
+      dnf:
+        name: tailscale
+        state: present
+      
+    - name: Enable IP forwarding
+      lineinfile: 
+        path: /etc/sysctl.d/99-tailscale.conf
+        search_string: "{{ item }}"
+        line: "{{ item }}"
+      loop:
+        - 'net.ipv4.ip_forward = 1'
+        - 'net.ipv6.conf.all.forwarding = 1'
+
+    - name: Apply sysctl settings
+      shell: sysctl -p /etc/sysctl.d/99-tailscale.conf
+
+    - name: Enable and start Tailscale service
+      systemd:
+        name: tailscaled
+        enabled: true
+        state: started
+
+- name: Create directories
+  file: 
+    path: "/opt/loc_admin/{{ item }}"
+    state: directory
+  loop:
+    - app
+    - install
 
 - name: Clone app repo 
   git: 
     repo: https://github.com/zachneill/app.git
     dest: "/opt/loc_admin/app"
     version: main
+
+- name: Copy rootCA to usr/local/share/ca-certificates
+  copy:
+    src: /opt/loc_admin/app/certs/rootCA.pem
+    dest: /usr/local/share/ca-certificates/rootCA.pem
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Update CA certificates
+  shell: update-ca-certificates
