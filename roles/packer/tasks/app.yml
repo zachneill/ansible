@@ -145,14 +145,6 @@
         dest: "/opt/loc_admin/app"
         version: main
     
-    - name: ll 
-      shell: ls -l /opt/loc_admin/app
-      register: ll_output
-
-    - name: Display ll 
-      debug:
-        var: ll_output
-
     - name: Copy rootCA to system anchors directory
       copy:
         src: /opt/loc_admin/app/certs/rootCA.pem
