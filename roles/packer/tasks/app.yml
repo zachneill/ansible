@@ -1,30 +1,41 @@
-- name: Update and upgrade all packages
-  dnf:
-    name: "*"
-    state: latest
-    update_cache: yes
+- name: Prework 
+  block: 
+    - name: Update and upgrade all packages
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
 
-- name: Install packages
-  dnf:
-    name: 
-      - qemu-guest-agent
-      - net-tools
-      - curl
-      - git
-      - realmd 
-      - sssd 
-      - adcli
-      - samba-common-tools
-      - oddjob 
-      - oddjob-mkhomedir
-      - krb5-workstation
-      - whois
-      - kernel-modules-extra
-    state: present
+    - name: Install packages
+      dnf:
+        name: 
+          - qemu-guest-agent
+          - net-tools
+          - curl
+          - git
+          - realmd 
+          - sssd 
+          - adcli
+          - samba-common-tools
+          - oddjob 
+          - oddjob-mkhomedir
+          - krb5-workstation
+          - whois
+        state: present
+
+    - name: Enable qemu (but don't start it)
+      systemd: 
+        name: qemu-guest-agent
+        enabled: true
 
 - name: Install Docker 
   block: 
-    - name: Depmod to load new modules
+    - name: Install packages
+      dnf:
+        name: kernel-modules-extra
+        state: present
+
+    - name: Depmod to rebuild module dependencies
       shell: depmod -a
 
     - name: Add Docker CE repository
@@ -32,45 +43,7 @@
         url: https://download.docker.com/linux/centos/docker-ce.repo
         dest: /etc/yum.repos.d/docker-ce.repo
         mode: '0644'
-    # - name: Add Docker CE repository
-    #   yum_repository: 
-    #     name: docker-ce
-    #     description: Docker CE Stable
-    #     baseurl: https://download.docker.com/linux/alma/10/x86_64/stable
-    #     gpgcheck: true
-    #     gpgkey: https://download.docker.com/linux/alma/gpg
-    - name: Show OS release
-      command: cat /etc/os-release
-      register: os_release
-      changed_when: false
 
-    - debug:
-        var: os_release.stdout
-
-    - name: Show Docker repo file
-      command: cat /etc/yum.repos.d/docker-ce.repo
-      register: docker_repo
-      changed_when: false
-
-    - name: Debug Docker repo
-      debug:
-        var: docker_repo.stdout
-    - name: Show Docker repository
-      command: dnf repolist --all
-      register: docker_repolist
-      changed_when: false
-
-    - debug:
-        var: docker_repolist.stdout
-
-    - name: List Docker CE packages
-      command: dnf list --showduplicates docker-ce
-      register: docker_list
-      changed_when: false
-      failed_when: false
-
-    - debug:
-        var: docker_list.stdout
     - name: Install Docker CE
       dnf:
         name: 
@@ -98,35 +71,42 @@
         groups: sudo,docker
         append: true 
 
-- name: Enable qemu and oddjob services
-  systemd:
-    name: "{{ item }}"
-    enabled: true
-    state: started
-  loop:
-    - qemu-guest-agent
-    - oddjobd
+- name: Domain work
+  block: 
+    - name: Enable and start oddjob service
+      systemd:
+        name: oddjobd
+        enabled: true
+        state: started
 
-- name: Auto-make home directory 
-  shell: authselect select sssd with-mkhomedir
+    # - name: Join the domain
+    #   shell: "echo '......' | realm -v join aut.lan --membership-software=samba"
+    #   register: realm_join
+    #   ignore_errors: true
+    #   timeout: 60
 
-- name: Set use_fully_qualified_names to False
-  lineinfile:
-    path: "/etc/sssd/sssd.conf"
-    search_string: use_fully_qualified_names
-    line: use_fully_qualified_names = False
+    - name: Auto-make home directory 
+      shell: authselect select sssd with-mkhomedir
 
-- name: Restart sssd
-  service:
-    name: sssd
-    state: restarted 
+    # - name: Set use_fully_qualified_names to False
+    #   lineinfile:
+    #     path: "/etc/sssd/sssd.conf"
+    #     search_string: use_fully_qualified_names
+    #     line: use_fully_qualified_names = False
+    #   ignore_errors: true 
 
-- name: Install and configure Tailscale
+    # - name: Restart sssd
+    #   service:
+    #     name: sssd
+    #     state: restarted 
+
+- name: Install Tailscale
   block:
     - name: Add Tailscale repository
-      dnf:
-        name: https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-        state: present
+      get_url:
+        url: https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+        dest: /etc/yum.repos.d/tailscale.repo
+        mode: '0644'
 
     - name: Install Tailscale
       dnf:
@@ -138,6 +118,7 @@
         path: /etc/sysctl.d/99-tailscale.conf
         search_string: "{{ item }}"
         line: "{{ item }}"
+        create: true 
       loop:
         - 'net.ipv4.ip_forward = 1'
         - 'net.ipv6.conf.all.forwarding = 1'
@@ -151,27 +132,35 @@
         enabled: true
         state: started
 
-- name: Create directories
-  file: 
-    path: "/opt/loc_admin/{{ item }}"
-    state: directory
-  loop:
-    - app
-    - install
+- name: App repo work 
+  block:
+    - name: Create directories
+      file: 
+        path: "/opt/loc_admin/app"
+        state: directory
 
-- name: Clone app repo 
-  git: 
-    repo: https://github.com/zachneill/app.git
-    dest: "/opt/loc_admin/app"
-    version: main
+    - name: Clone app repo 
+      git: 
+        repo: https://github.com/zachneill/app.git
+        dest: "/opt/loc_admin/app"
+        version: main
+    
+    - name: ll 
+      shell: ls -l /opt/loc_admin/app
+      register: ll_output
 
-- name: Copy rootCA to usr/local/share/ca-certificates
-  copy:
-    src: /opt/loc_admin/app/certs/rootCA.pem
-    dest: /usr/local/share/ca-certificates/rootCA.pem
-    owner: root
-    group: root
-    mode: '0644'
+    - name: Display ll 
+      debug:
+        var: ll_output
 
-- name: Update CA certificates
-  shell: update-ca-certificates
+    - name: Copy rootCA to system anchors directory
+      copy:
+        src: /opt/loc_admin/app/certs/rootCA.pem
+        dest: /etc/pki/ca-trust/source/anchors/rootCA.pem
+        owner: root
+        group: root
+        mode: '0644'
+        remote_src: true
+
+    - name: Update certs
+      shell: update-ca-trust
