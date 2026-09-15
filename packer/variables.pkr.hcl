@@ -84,7 +84,7 @@ variable "root_shutdown_command" {
   description = "The command to use to gracefully shut down the machine"
 
   type    = string
-  default = "/sbin/shutdown -hP now"
+  default = "sudo systemctl poweroff --no-block"
 }
 
 variable "qemu_binary" {
@@ -98,14 +98,14 @@ variable "ovmf_code" {
   description = "Path of OVMF code file"
 
   type    = string
-  default = "/usr/share/OVMF/OVMF_CODE.secboot.fd"
+  default = "/usr/share/kvm/OVMF_CODE-pure-efi.fd"
 }
 
 variable "ovmf_vars" {
   description = "Path of OVMF variables file"
 
   type    = string
-  default = "/usr/share/OVMF/OVMF_VARS.secboot.fd"
+  default = "/usr/share/kvm/OVMF_VARS-pure-efi.fd"
 }
 
 variable "aavmf_code" {

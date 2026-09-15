@@ -56,11 +56,8 @@
 
     - name: Create groups
       group:
-        name: "{{ item }}"
+        name: docker
         state: present
-      loop:
-        - docker
-        - sudo
 
     - name: Add the user loc_admin 
       user:
@@ -68,7 +65,7 @@
         comment: Local Admin User
         create_home: true 
         shell: /bin/bash
-        groups: sudo,docker
+        groups: docker,wheel
         append: true 
 
 - name: Domain work

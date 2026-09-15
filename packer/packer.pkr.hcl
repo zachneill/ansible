@@ -44,10 +44,11 @@ source "qemu" "almalinux_10_gencloud_x86_64" {
   vm_name            = "AlmaLinux-10-GenericCloud-${var.os_ver_10}-${formatdate("YYYYMMDD", timestamp())}.${var.build_number}.x86_64.qcow2"
   cpu_model          = "host"
   cpus               = var.cpus
-  # efi_boot           = true
-  # efi_firmware_code  = var.ovmf_code
-  # efi_firmware_vars  = var.ovmf_vars
-  # efi_drop_efivars   = true
+  efi_boot           = true
+  efi_firmware_code  = var.ovmf_code
+  efi_firmware_vars  = var.ovmf_vars
+  efi_drop_efivars   = true
+  vga = "virtio"
 }
 
 build {
@@ -72,8 +73,9 @@ build {
     playbook_file = "packer.yml"
     # skip_version_check = true
     extra_arguments = [
+      "-v",
       "--extra-vars",
-      "vm=app ansible_user=root"
+      "vm=app ansible_user=root target=default"
     ]
   }
 }
