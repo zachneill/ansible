@@ -27,17 +27,10 @@
       systemd: 
         name: qemu-guest-agent
         enabled: true
+  become: true
 
 - name: Install Docker 
   block: 
-    - name: Install packages
-      dnf:
-        name: kernel-modules-extra
-        state: present
-
-    - name: Depmod to rebuild module dependencies
-      shell: depmod -a
-
     - name: Add Docker CE repository
       get_url:
         url: https://download.docker.com/linux/centos/docker-ce.repo
@@ -67,6 +60,7 @@
         shell: /bin/bash
         groups: docker,wheel
         append: true 
+  become: true
 
 - name: Domain work
   block: 
@@ -96,6 +90,7 @@
     #   service:
     #     name: sssd
     #     state: restarted 
+  become: true
 
 - name: Install Tailscale
   block:
@@ -128,13 +123,16 @@
         name: tailscaled
         enabled: true
         state: started
+  become: true
 
 - name: App repo work 
   block:
-    - name: Create directories
+    - name: Create directory
       file: 
         path: "/opt/loc_admin/app"
         state: directory
+        owner: packer
+      become: true
 
     - name: Clone app repo 
       git: 
@@ -148,8 +146,10 @@
         dest: /etc/pki/ca-trust/source/anchors/rootCA.pem
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
         remote_src: true
+      become: true
 
     - name: Update certs
       shell: update-ca-trust
+      become: true
