@@ -51,15 +51,6 @@
       group:
         name: docker
         state: present
-
-    - name: Add the user loc_admin 
-      user:
-        name: loc_admin
-        comment: Local Admin User
-        create_home: true 
-        shell: /bin/bash
-        groups: docker,wheel
-        append: true 
   become: true
 
 - name: Domain work
@@ -70,26 +61,8 @@
         enabled: true
         state: started
 
-    # - name: Join the domain
-    #   shell: "echo '......' | realm -v join aut.lan --membership-software=samba"
-    #   register: realm_join
-    #   ignore_errors: true
-    #   timeout: 60
-
     - name: Auto-make home directory 
       shell: authselect select sssd with-mkhomedir
-
-    # - name: Set use_fully_qualified_names to False
-    #   lineinfile:
-    #     path: "/etc/sssd/sssd.conf"
-    #     search_string: use_fully_qualified_names
-    #     line: use_fully_qualified_names = False
-    #   ignore_errors: true 
-
-    # - name: Restart sssd
-    #   service:
-    #     name: sssd
-    #     state: restarted 
   become: true
 
 - name: Install Tailscale

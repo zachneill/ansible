@@ -1,0 +1,20 @@
+- name: Domain work
+  block: 
+    - name: Join the domain
+      shell: "echo '{{ admin_pw }}' | realm -v join aut.lan --membership-software=samba"
+      register: realm_join
+      ignore_errors: true
+      timeout: 60
+
+    - name: Set use_fully_qualified_names to False
+      lineinfile:
+        path: "/etc/sssd/sssd.conf"
+        search_string: use_fully_qualified_names
+        line: use_fully_qualified_names = False
+      ignore_errors: true 
+
+    - name: Restart sssd
+      service:
+        name: sssd
+        state: restarted 
+  become: true

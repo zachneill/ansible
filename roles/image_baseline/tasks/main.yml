@@ -1,0 +1,2 @@
+- include_tasks: app.yml
+  when: vm is search("app")
