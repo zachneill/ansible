@@ -2,7 +2,7 @@ app_servers:
   hosts:
     # o[a:z]pautapp[01:10].aut.zachneill.com:
     oapautapp01.aut.zachneill.com:
-    oupautapp02.aut.zachneill.com:
+    oapautapp02.aut.zachneill.com:
 
 platform_servers:
   hosts:
