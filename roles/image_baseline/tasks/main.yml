@@ -1,2 +1,2 @@
 - include_tasks: app.yml
-  when: vm is search("app")
+  when: ansible_hostname is search("app")
