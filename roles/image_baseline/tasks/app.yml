@@ -1,30 +1,32 @@
 - name: Domain work
   block: 
-    # - name: Join the domain
-    #   shell: "echo '{{ admin_pw }}' | realm -v join aut.lan --membership-software=samba"
-    #   register: realm_join
-    #   timeout: 60
+    - name: Join the domain
+      shell: "echo '{{ admin_pw }}' | realm -v join aut.lan --membership-software=samba"
+      register: realm_join
+      timeout: 60
+      no_log: true 
 
-    # - name: Set use_fully_qualified_names to False
-    #   lineinfile:
-    #     path: "/etc/sssd/sssd.conf"
-    #     search_string: use_fully_qualified_names
-    #     line: use_fully_qualified_names = False
-
-    # - name: Restart sssd
-    #   service:
-    #     name: sssd
-    #     state: restarted 
-
-    - name: Add ansible to sudoers file 
+    - name: Set use_fully_qualified_names to False
       lineinfile:
-        path: "/etc/sudoers.d/domain-admins"
-        search_string: svc_ansible
-        line: svc_ansible ALL=(ALL) NOPASSWD:ALL
-        create: true 
-        mode: '440'
-        owner: root
-        group: root
+        path: "/etc/sssd/sssd.conf"
+        search_string: use_fully_qualified_names
+        line: use_fully_qualified_names = False
 
+    - name: Restart sssd
+      service:
+        name: sssd
+        state: restarted 
+  become: true
+  become_user: root
+
+- name: Add ansible to sudoers file 
+  lineinfile:
+    path: "/etc/sudoers.d/domain-admins"
+    search_string: svc_ansible
+    line: svc_ansible ALL=(ALL) NOPASSWD:ALL
+    create: true 
+    mode: '440'
+    owner: root
+    group: root
   become: true
   become_user: root

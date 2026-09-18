@@ -1,2 +1,5 @@
 - include_tasks: app.yml
   when: vm is search("app")
+
+- include_tasks: plt.yml
+  when: vm is search("plt")

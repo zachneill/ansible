@@ -1,2 +1,5 @@
 - include_tasks: app.yml
   when: ansible_hostname is search("app")
+
+- include_tasks: plt.yml
+  when: ansible_hostname is search("plt")

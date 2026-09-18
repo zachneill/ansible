@@ -1,0 +1,15 @@
+#cloud-config
+
+users:
+  - default
+  - name: packer
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    shell: /bin/bash
+    groups: 
+      - sudo
+      - docker
+    lock_passwd: false
+    passwd: $6$rounds=4096$MR3KlTvYTPLiffJV$ltXvqJTkQqTlM08owi8NBMAEbb0CNQdn4N/BCenQ/aNumUlZv0ZHIs3CRSW0.uueN9E3IM7eYqiAU4g5AZrEQ/
+ssh_pwauth: true
+chpasswd:
+  expire: false
